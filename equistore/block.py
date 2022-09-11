@@ -3,6 +3,8 @@ import ctypes
 import gc
 from typing import Generator, List, Tuple
 
+import numpy as np
+
 from ._c_api import c_uintptr_t, eqs_array_t, eqs_labels_t
 from ._c_lib import _get_library
 from .data import (
@@ -12,7 +14,7 @@ from .data import (
     eqs_array_to_python_wrapper,
     eqs_array_was_allocated_by_python,
 )
-from .labels import Labels
+from .labels import Labels, _get_equal_and_order
 from .status import _check_pointer
 
 
@@ -163,6 +165,69 @@ class TensorBlock:
             s += "no"
 
         return s
+
+    def __eq__(self, other: "TensorBlock") -> bool:
+        if len(self.samples) == len(other.samples):
+            result, order_other_sample = _get_equal_and_order(
+                self.samples, other.samples
+            )
+            if not result:
+                return False
+        else:
+            return False
+
+        if len(self.properties) == len(other.properties):
+            result, order_other_properties = _get_equal_and_order(
+                self.properties, other.properties
+            )
+            if not result:
+                return False
+        else:
+            return False
+
+        if len(self.components) > 0:
+            order_other_components = []
+            if len(self.components) == len(other.components):
+                list_name_other = [name.names[0] for name in other.components]
+                for comp in self.components:
+                    try:  # See which is the index of name in other
+                        idx = list_name_other.index(comp.names[0])
+                        order_other_components.append(idx)
+                        if not (comp == other.components[idx]):
+                            return False
+                    except ValueError:
+                        # if is not present at all the two Labels are different
+                        return False
+            else:
+                return False
+
+            value_other = other.values[order_other_sample]
+            value_other = value_other[:, order_other_components, :]
+            value_other = value_other[:, :, order_other_properties]
+            # TODO not use np.all
+            if not np.all(self.values == value_other).all():
+                return False
+        else:
+            value_other = other.values[order_other_sample]
+            value_other = value_other[:, order_other_properties]
+            if not np.all(self.values == value_other):
+                return False
+
+        if len(self.gradients_list()) > 0:
+            if len(self.gradients_list()) == len(other.gradients_list()):
+                for parameter, gradient in self.gradients():
+                    if other.has_gradient(parameter):
+                        if not (gradient == other.gradient(parameter)):
+                            return False
+                    else:
+                        return False
+            else:
+                return False
+        else:
+            if len(other.gradients_list()) != 0:
+                return False
+
+        return True
 
     @property
     def values(self) -> Array:
@@ -334,6 +399,56 @@ class Gradient:
         s += "'" + self.properties.names[-1] + "']"
 
         return s
+
+    def __eq__(self, other: "Gradient") -> bool:
+        result = False
+        if len(self.samples) == len(other.sample):
+            result, order_other_sample = _get_equal_and_order(
+                self.samples, other.samples
+            )
+            if not result:
+                return False
+        else:
+            return False
+
+        if len(self.properties) == len(other.properties):
+            result, order_other_properties = _get_equal_and_order(
+                self.properties, other.properties
+            )
+            if not result:
+                return False
+        else:
+            return False
+        # component are wrong if  len(self.components) = nc
+        # there are nc other columns in the value matrix
+        if len(self.components) > 0:
+            order_other_components = []
+            if len(self.components) == len(other.components):
+                list_name_other = [name.names[0] for name in other.components]
+                for comp in self.components:
+                    try:  # See which is the index of name in other
+                        idx = list_name_other.index(comp.names[0])
+                        order_other_components.append(idx)
+                        if not (comp == other.components[idx]):
+                            return False
+                    except ValueError:
+                        # if is not present at all the two Labels are different
+                        return False
+            else:
+                return False
+
+            data_other = other.data[order_other_sample]
+            data_other = data_other[:, order_other_components, :]
+            data_other = data_other[:, :, order_other_properties]
+            if not (self.values == data_other):
+                return False
+        else:
+            data_other = other.data[order_other_sample]
+            data_other = data_other[:, order_other_properties]
+            if not (self.values == data_other):
+                return False
+
+        return True
 
     @property
     def data(self) -> Array:

@@ -6,6 +6,85 @@ from equistore import Labels, TensorBlock
 
 
 class TestBlocks(unittest.TestCase):
+    def test__eq__(self):
+        block1 = TensorBlock(
+            values=np.array([[1, 2], [3, 4], [5, 6]]),
+            samples=Labels(["samples"], np.array([[0], [2], [4]], dtype=np.int32)),
+            components=[],
+            properties=Labels(["properties"], np.array([[5], [3]], dtype=np.int32)),
+        )
+        block2 = TensorBlock(
+            values=np.array([[3, 4], [1, 2], [5, 6]]),
+            samples=Labels(["samples"], np.array([[2], [0], [4]], dtype=np.int32)),
+            components=[],
+            properties=Labels(["properties"], np.array([[5], [3]], dtype=np.int32)),
+        )
+        block3 = TensorBlock(
+            values=np.array([[4, 3], [2, 1], [6, 5]]),
+            samples=Labels(["samples"], np.array([[2], [0], [4]], dtype=np.int32)),
+            components=[],
+            properties=Labels(["properties"], np.array([[3], [5]], dtype=np.int32)),
+        )
+
+        self.assertTrue(block1 == block1)
+        self.assertTrue(block2 == block2)
+        self.assertTrue(block3 == block3)
+        self.assertTrue(block1 == block2)
+        self.assertTrue(block1 == block3)
+        self.assertTrue(block2 == block3)
+
+        block1 = TensorBlock(
+            values=np.array([[1, 2], [3, 4], [5, 6]]),
+            samples=Labels(
+                ["samples1", "samples2"],
+                np.array([[0, 5], [2, 7], [4, 8]], dtype=np.int32),
+            ),
+            components=[],
+            properties=Labels(
+                ["properties1", "properties2"],
+                np.array([[5, 3], [3, 3]], dtype=np.int32),
+            ),
+        )
+        block2 = TensorBlock(
+            values=np.array([[3, 4], [1, 2], [5, 6]]),
+            samples=Labels(
+                ["samples1", "samples2"],
+                np.array([[2, 7], [0, 5], [4, 8]], dtype=np.int32),
+            ),
+            components=[],
+            properties=Labels(
+                ["properties1", "properties2"],
+                np.array([[5, 3], [3, 3]], dtype=np.int32),
+            ),
+        )
+        block3 = TensorBlock(
+            values=np.array([[3, 4], [1, 2], [5, 6]]),
+            samples=Labels(
+                ["samples2", "samples1"],
+                np.array([[7, 2], [5, 0], [8, 4]], dtype=np.int32),
+            ),
+            components=[],
+            properties=Labels(
+                ["properties1", "properties2"],
+                np.array([[5, 3], [3, 3]], dtype=np.int32),
+            ),
+        )
+        block4 = TensorBlock(
+            values=np.array([[4, 3], [2, 1], [6, 5]]),
+            samples=Labels(["samples"], np.array([[2], [0], [4]], dtype=np.int32)),
+            components=[],
+            properties=Labels(["properties"], np.array([[3], [5]], dtype=np.int32)),
+        )
+
+        self.assertTrue(block1 == block1)
+        self.assertTrue(block2 == block2)
+        self.assertTrue(block3 == block3)
+        self.assertTrue(block1 == block2)
+        self.assertTrue(block1 == block3)
+        self.assertTrue(block2 == block3)
+        self.assertFalse(block1 == block4)
+        self.assertFalse(block2 == block4)
+
     def test_repr(self):
         block = TensorBlock(
             values=np.full((3, 2), -1.0),

@@ -6,7 +6,7 @@ import numpy as np
 from ._c_api import c_uintptr_t, eqs_block_t, eqs_labels_t
 from ._c_lib import _get_library
 from .block import TensorBlock
-from .labels import Labels, _is_namedtuple, _print_labels
+from .labels import Labels, _is_namedtuple, _print_labels, _get_equal_and_order
 from .status import _check_pointer
 
 
@@ -367,6 +367,17 @@ class TensorMap:
         self._lib.eqs_tensormap_components_to_properties(
             self._ptr, c_variables, c_variables._length_
         )
+
+    def __eq__(self, other: "TensorMap") -> bool:
+        result, other_order = _get_equal_and_order(self.keys, other.keys)
+        if result:
+            for i, key in enumerate(self.keys):
+                print(other.keys[other_order[i]], other_order[i])
+                if not (self.block(key) == other.block(other.keys[other_order[i]])):
+                    return False
+        else:
+            return False
+        return True
 
     @property
     def sample_names(self) -> List[str]:

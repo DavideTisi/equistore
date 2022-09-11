@@ -136,6 +136,26 @@ class Labels(np.ndarray):
         """
         return Labels(names=["_"], values=np.zeros(shape=(1, 1), dtype=np.int32))
 
+    #    def __equal__(self, other: "Labels") -> bool:
+    #        result = True
+    #        names = self.names
+    #        other_names = other.names
+    #        index_other = []
+    #        if len(names) == len(other_names):
+    #            for name in names:
+    #                try:  # See which is the index of name in other
+    #                    other_value = other[name]
+    #                    result = result and (other_value)
+    #                except ValueError:
+    #         # if is not present at all the two Labels are different
+    #                    return False
+    #
+    #            if not result:
+    #                return False
+    #        else:
+    #            result = False
+    #        return result
+
     def as_namedtuples(self):
         """
         Iterator over the entries in these Labels as namedtuple instances.
@@ -325,3 +345,37 @@ def _make_padding(value, width: int, prev=0):
     """
     pad = prev + width // 2
     return ("{:>" + str(pad) + "}").format(value)
+
+
+def _get_equal_and_order(label1: Labels, label2: Labels):
+    """check if two :py:class:`Labels`
+    from :py:class:`TensorBlock` or :py:class:`TensorMap`
+
+    Args:
+        label1 (Labels): first :py:class:`Labels`
+        label2 (Labels): second :py:class:`Labels`
+    """
+    order = []
+    result = True
+
+    names1 = label1.names
+    names2 = label2.names
+    names2_order = []
+    if len(names1) == len(names2) and len(label1) == len(label2):
+        for name in names1:
+            try:  # See which is the index of name in other
+                names2_order.append(names2.index(name))
+            except ValueError:  # if is not present at all the two Labels are different
+                return False, None
+        for value in label1:
+            value2 = tuple([value[i] for i in names2_order])
+            pos_in_2 = label2.position(value2)
+            if pos_in_2 is not None:
+                order.append(pos_in_2)
+            else:
+                return False, None
+        if not result:
+            return False, None
+    else:
+        result = False, None
+    return result, order

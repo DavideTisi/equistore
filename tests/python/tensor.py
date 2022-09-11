@@ -3,6 +3,8 @@ import unittest
 import numpy as np
 from utils import test_large_tensor_map, test_tensor_map
 
+from equistore import Labels, TensorBlock, TensorMap
+
 
 class TestTensorMap(unittest.TestCase):
     def test_keys(self):
@@ -42,6 +44,88 @@ keys: ['key_1' 'key_2']
           2       5
           3       5"""
         self.assertTrue(expected == _print)
+
+    def test__eq__(self):
+        keys_1 = Labels(
+            names=["key_1", "key_2"],
+            values=np.array([[0, 0], [1, 0], [2, 2], [2, 3]], dtype=np.int32),
+        )
+        keys_2 = Labels(
+            names=["key_2", "key_1"],
+            values=np.array([[0, 0], [2, 2], [3, 2], [0, 1]], dtype=np.int32),
+        )
+        block_1 = TensorBlock(
+            values=np.array([[1, 2], [5, 6]]),
+            samples=Labels(["samples"], np.array([[0], [4]], dtype=np.int32)),
+            components=[],
+            properties=Labels(["properties"], np.array([[5], [3]], dtype=np.int32)),
+        )
+        block_2 = TensorBlock(
+            values=np.array([[3, 4], [1, 2], [500, 69]]),
+            samples=Labels(["samples"], np.array([[2], [0], [4]], dtype=np.int32)),
+            components=[],
+            properties=Labels(["properties"], np.array([[59], [13]], dtype=np.int32)),
+        )
+        block_3 = TensorBlock(
+            values=np.array([[4, 3], [2, 1], [6, 5]]),
+            samples=Labels(["samples"], np.array([[2], [0], [4]], dtype=np.int32)),
+            components=[],
+            properties=Labels(["properties"], np.array([[3], [5]], dtype=np.int32)),
+        )
+        block_4 = TensorBlock(
+            values=np.array([[3, 4], [1, 2], [5, 6]]),
+            samples=Labels(
+                ["samples"],
+                np.array([[7], [0], [4]], dtype=np.int32),
+            ),
+            components=[],
+            properties=Labels(
+                ["properties"],
+                np.array([[53], [33]], dtype=np.int32),
+            ),
+        )
+        block_11 = TensorBlock(
+            values=np.array([[1, 2], [5, 6]]),
+            samples=Labels(["samples"], np.array([[0], [4]], dtype=np.int32)),
+            components=[],
+            properties=Labels(["properties"], np.array([[5], [3]], dtype=np.int32)),
+        )
+        block_21 = TensorBlock(
+            values=np.array([[3, 4], [1, 2], [500, 69]]),
+            samples=Labels(["samples"], np.array([[2], [0], [4]], dtype=np.int32)),
+            components=[],
+            properties=Labels(["properties"], np.array([[59], [13]], dtype=np.int32)),
+        )
+        block_31 = TensorBlock(
+            values=np.array([[4, 3], [2, 1], [6, 5]]),
+            samples=Labels(["samples"], np.array([[2], [0], [4]], dtype=np.int32)),
+            components=[],
+            properties=Labels(["properties"], np.array([[3], [5]], dtype=np.int32)),
+        )
+        block_41 = TensorBlock(
+            values=np.array([[3, 4], [1, 2], [5, 6]]),
+            samples=Labels(
+                ["samples"],
+                np.array([[7], [0], [4]], dtype=np.int32),
+            ),
+            components=[],
+            properties=Labels(
+                ["properties"],
+                np.array([[53], [33]], dtype=np.int32),
+            ),
+        )
+        tensor1 = TensorMap(keys_1, [block_1, block_2, block_3, block_4])
+        tensor2 = TensorMap(keys_2, [block_11, block_31, block_41, block_21])
+        # tensor2 = TensorMap(
+        #    keys_2, [block_1.copy(), block_3.copy(), block_4.copy(), block_2.copy()]
+        # )
+        # tensor3 = TensorMap(
+        #    keys_2, [block_2.copy(), block_3.copy(), block_4.copy(), block_1.copy()]
+        # )
+        self.assertTrue(tensor1 == tensor1)
+        self.assertTrue(tensor1 == tensor2)
+        # self.assertFalse(tensor1 == tensor3)
+        # self.assertFalse(tensor2 == tensor3)
 
     def test_labels_names(self):
         tensor = test_tensor_map()
